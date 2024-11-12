@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstddef>
+#include <string>
 
 class Store;
 
@@ -106,9 +107,11 @@ uint64_t fnv_1a(const char* bytes, size_t l);
 
 
 bool flattenRegex(Store* store, Logger logger, const char* regex);
+bool flattenMerge(Store* store, Logger logger, const char* regex); //--cjh, 设置哪些对象不合并，学自flattenRegex()
 void connect(Store* store, Logger logger);
 void align(Store* store, Logger logger);
 bool exportJson(Store* store, Logger logger, const char* path);
 bool discardGroups(Store* store, Logger logger, const void* ptr, size_t size);
+bool mergeGroups(Store* store, Logger logger, const void* ptr, size_t size, std::string& strRegex); //--cjh, 读取不合并对象的组名，学自discardGroups()
 bool exportRev(Store* store, Logger logger, const char* path);
 bool exportGLTF(Store* store, Logger logger, const char* path, size_t splitLevel, bool rotateZToY, bool centerModel, bool includeAttributes, bool mergeGeometries);

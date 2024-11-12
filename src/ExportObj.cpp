@@ -141,15 +141,33 @@ void ExportObj::beginGroup(Node* group)
   for (unsigned i = 0; i < 3; i++) curr_translation[i] = group->group.translation[i];
 
   stack[stack_p++] = group->group.name;
-
+  /*  //--cjh,只输出group name，不再输出group树的全路径
   fprintf(out, "o %s", stack[0]);
   for (unsigned i = 1; i < stack_p; i++) {
     fprintf(out, "/%s", stack[i]);
   }
   fprintf(out, "\n");
+  
  
 
 //  fprintf(out, "o %s\n", group->group.name);
+  */
+  //--cjh ,group.id = -10000是不需要合并的叶子节点的标识
+  if ( group->group.id != -10000)  {
+
+      if (group->children.first == nullptr) {
+
+          fprintf(out, "g %s\n", group->group.name);
+
+      }
+      else {
+          fprintf(out, "o %s\n", group->group.name);
+      }
+    
+  }
+  else {
+      fprintf(out, "o %s\n", group->group.name);
+  }
 
 
   if (groupBoundingBoxes && !isEmpty(group->group.bboxWorld)) {

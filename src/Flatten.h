@@ -14,6 +14,9 @@ public:
   // insert a single tag into keep set
   void keepTag(const char* tag);
 
+  // --cjh insert a single tag into merge set
+  //void mergeTag(const char* tag);
+
   // Tags submitted as selected, may be way more than actual number of tags. But consistent between different stores.
   unsigned selectedTagsCount() const { return currentIndex; }
 
@@ -24,6 +27,9 @@ public:
 private:
   Map srcTags;  // All tags in source store
   Map tags;
+
+  //--cjh 不合并对象的名称关键字，如果对象名称包含该关键字，则不合并geometries
+  //Map mergeTags;
 
   Arena arena;
   unsigned pass = 0;

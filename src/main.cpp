@@ -146,6 +146,8 @@ Options:
   --discard-groups=filename.txt       Provide a list of group names to discard, one name per line.
                                       Groups with its name in this list will be discarded along
                                       with its children. Default is no groups are discarded.
+  --merge-groups                      Provide a list of group names not to be merged. one name per line. 
+                                      A name maybe a regex express or a key word.
   --output-json=<filename.json>       Write hierarchy with attributes to a json file.
   --output-txt=<filename.txt>         Dump all group names to a text file.
   --output-rev=filename.rev           Write database as a text review file.
@@ -222,6 +224,7 @@ int main(int argc, char** argv)
   std::string keep_regex;
   std::string discard_groups;
   std::string keep_groups;
+  std::string merge_groups("");  //--cjh, 不合并几何对象的组名
   std::string output_json;
   std::string output_txt;
   std::string output_gltf;
@@ -266,6 +269,10 @@ int main(int argc, char** argv)
         else if (key == "--discard-groups") {
           discard_groups = val;
           continue;
+        }
+        else if (key == "--merge-groups") {
+            merge_groups = val;
+            continue;
         }
         else  if (key == "--output-json") {
           output_json = val;
@@ -398,10 +405,9 @@ int main(int argc, char** argv)
       rv = -1;
     }
   }
-
   if (rv == 0) {
-    connect(store, logger);
-    align(store, logger);
+      connect(store, logger);
+      align(store, logger);
   }
 
   if (rv == 0 && (should_tessellate || !output_json.empty())) {
@@ -501,6 +507,32 @@ int main(int argc, char** argv)
       rv = -1;
     }
   }
+
+
+  //{{--cjh 处理不合并对象的组名
+  std::string merge_regex;
+  if (rv == 0 && !merge_groups.empty()) {
+      if (processFile(merge_groups, [store, &merge_regex](const void* ptr, size_t size) { return mergeGroups(store, logger, ptr, size, merge_regex); })) {
+          logger(0, "Processed %s", merge_groups.c_str());
+      } else {
+          logger(2, "Failed to parse %s", merge_groups.c_str());
+          rv = -1;
+      }
+  }
+
+  if (rv == 0 && !merge_regex.empty()) {
+
+      auto time0 = std::chrono::high_resolution_clock::now();
+      if (flattenMerge(store, logger, merge_regex.c_str())) {
+          long long ms = std::chrono::duration_cast<std::chrono::milliseconds>((std::chrono::high_resolution_clock::now() - time0)).count();
+
+          logger(0, "Flatten merge using regex '%s' in %lldms", merge_regex.c_str(), ms);
+      } else {
+          logger(2, "Failed to flatten merge using regex '%s'", merge_regex.c_str());
+          rv = -1;
+      }
+  }
+  //}}--cjh
 
   if (rv == 0 && !output_obj_stem.empty()) {
     assert(should_tessellate);

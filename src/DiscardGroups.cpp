@@ -9,6 +9,7 @@ namespace {
     Store* store;
     Logger logger;
     uint32_t discarded = 0;
+    Map mergeTags;
   };
 
   void readTagList(Context* context, const void* ptr, size_t size)
@@ -36,6 +37,28 @@ namespace {
     context->logger(0, "DiscardGroups: Read %d tags.", N);
   }
 
+  void readMergeList(Context* context, const void* ptr, size_t size) {
+      auto* a = (const char*)ptr;
+      auto* b = a + size;
+
+      uint32_t N = 0;
+      while (true) {
+          while (a < b && (*a == '\n' || *a == '\r')) a++;
+          auto* c = a;
+          while (a < b && (*a != '\n' && *a != '\r')) a++;
+
+          if (c < a) {
+              auto* d = a - 1;
+              while (c < d && (d[-1] != '\t')) --d;
+
+              auto* str = context->store->strings.intern(d, a);
+              context->mergeTags.insert( uint64_t(1 + N++), uint64_t(str));
+          } else {
+              break;
+          }
+      }
+      context->logger(0, "DiscardGroups: Read %d tags.", N);
+  }
 
   void pruneChildren(Context* context, Node* group)
   {
@@ -75,4 +98,27 @@ bool discardGroups(Store* store, Logger logger, const void* ptr, size_t size)
   context.logger(0, "DiscardGroups: Discarded %d groups.", context.discarded);
 
   return true;
+}
+
+//--cjh, 读取不合并对象的组名，学自discardGroups()
+bool mergeGroups(Store* store, Logger logger, const void* ptr, size_t size,std::string& strRegex) 
+{
+    Context context;
+    context.store = store;
+    context.logger = logger;
+    context.mergeTags.clear();
+    readMergeList(&context, ptr, size);
+
+    for (uint64_t i = 0; i < context.mergeTags.fill; i++)
+    {
+        char* value = (char*) context.mergeTags.get(i + 1);
+        if (i == 0) {
+            strRegex = value;
+        }
+        else {
+            strRegex = strRegex + "|" + value;
+        }
+    }
+
+    return true;
 }

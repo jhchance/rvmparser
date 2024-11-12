@@ -104,6 +104,7 @@ void* Arena::alloc(size_t bytes)
 
 void* Arena::dup(const void* src, size_t bytes)
 {
+  if (src == nullptr) return nullptr;
   auto * dst = alloc(bytes);
   std::memcpy(dst, src, bytes);
   return dst;

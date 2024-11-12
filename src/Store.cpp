@@ -264,7 +264,7 @@ void Store::apply(StoreVisitor* visitor, Node* group)
   assert(group->kind == Node::Kind::Group);
   visitor->beginGroup(group);
 
-  if (group->attributes.first) {
+ if (group->attributes.first) {
     visitor->beginAttributes(group);
     for (auto * a = group->attributes.first; a != nullptr; a = a->next) {
       visitor->attribute(a->key, a->val);
@@ -281,12 +281,26 @@ void Store::apply(StoreVisitor* visitor, Node* group)
   }
 
   visitor->doneGroupContents(group);
+  
+  std::vector<Node*> mergeLeaves;
 
   if (group->children.first != nullptr) {
     visitor->beginChildren(group);
+   
     for (auto * g = group->children.first; g != nullptr; g = g->next) {
-      apply(visitor, g);
+       
+        //--cjh,先跳过不合并的对象，放到最后处理
+        if (g->group.id == -10000) {
+            mergeLeaves.push_back(g);
+            continue;
+        }
+        apply(visitor, g);
     }
+    //--cjh 处理不合并对象
+    for (Node* mergeLeaf : mergeLeaves)  {
+        apply(visitor, mergeLeaf);
+    }
+    mergeLeaves.clear();
     visitor->endChildren();
   }
 
